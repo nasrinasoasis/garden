@@ -3,132 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nasrina's Garden Fix</title>
+    <title>Nasrina's Enchanted Garden</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background: #ffe5ec; font-family: 'Press Start 2P', cursive; }
-        #game-canvas { display: block; background: linear-gradient(to bottom, #d0e8f0, #ffe5ec); cursor: pointer; }
-        #ui { position: absolute; top: 20px; left: 20px; color: #db7093; font-size: 12px; pointer-events: none; }
-        #nasrina-speech {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 80%; background: white; border: 4px solid #ffc1cc; border-radius: 15px;
-            padding: 15px; font-size: 8px; color: #5a7d55; line-height: 1.5;
-        }
+        body { margin: 0; overflow: hidden; background: #a6c1ee; font-family: 'Press Start 2P', cursive; }
+        #game-container { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+        
+        /* --- THE ALICE GARDEN LAYERS --- */
+        .layer { position: absolute; width: 200%; height: 100%; top: 0; left: 0; background-repeat: repeat-x; background-position: bottom; }
+        
+        /* 1. Far Mountains (Move slowest) */
+        .mountains { background-image: url('https://i.imgur.com/vH9vT5A.png'); background-size: contain; opacity: 0.6; z-index: 1; animation: move 60s linear infinite; }
+        
+        /* 2. Trees & Flowers (Move medium) */
+        .trees { background-image: url('https://i.imgur.com/kS9yXqW.png'); background-size: contain; z-index: 2; animation: move 30s linear infinite; bottom: 50px; }
+        
+        /* 3. The Ground (Move fastest) */
+        .ground { height: 100px; bottom: 0; background: #d4e4bc; border-top: 5px solid #88ab75; z-index: 10; width: 100%; }
+
+        @keyframes move { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+        /* --- CHARACTERS --- */
+        #player { position: absolute; bottom: 100px; left: 150px; font-size: 60px; z-index: 100; transition: bottom 0.1s; }
+        .pillar { position: absolute; bottom: 0; width: 100px; background: white; border: 4px solid #ffc1cc; border-radius: 15px 15px 0 0; z-index: 15; }
+        .treat { position: absolute; font-size: 40px; z-index: 20; }
+
+        #ui { position: absolute; top: 20px; left: 20px; color: #db7093; z-index: 1000; font-size: 14px; text-shadow: 2px 2px white; }
     </style>
 </head>
-<body onclick="handleInput()" onkeydown="if(event.code==='Space') handleInput()">
+<body onclick="jump()">
 
-    <div id="ui">CHARMS: <span id="score">0</span>/10</div>
-    <canvas id="game-canvas"></canvas>
-    
-    <div id="nasrina-speech">
-        🌸 Nasrina: "Queen, I fixed the magic! Tap to jump. If you land on a marshmallow pillar, you'll stay on top! Grab 10 treats to win!"
+    <div id="ui">CHARMS: <span id="score">0</span></div>
+    <div id="game-container">
+        <div class="layer mountains"></div>
+        <div class="layer trees"></div>
+        <div class="ground"></div>
+        <div id="player">🌸</div>
     </div>
 
 <script>
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 800;
-    canvas.height = 500;
-
     let score = 0;
-    let gameActive = true;
+    const player = { y: 100, dy: 0, jump: -18, grav: 0.9, onPillar: false };
+    const container = document.getElementById('game-container');
+    const playerEl = document.getElementById('player');
 
-    // Player Object
-    const player = {
-        x: 100, y: 350, w: 50, h: 50,
-        dy: 0, jumpForce: -15, gravity: 0.8,
-        grounded: false, emoji: '🌸'
-    };
-
-    const pillars = [];
-    let frame = 0;
+    function jump() {
+        if (player.y <= 105 || player.onPillar) {
+            player.dy = player.jump;
+            player.onPillar = false;
+        }
+    }
 
     function spawnPillar() {
-        const height = 100 + Math.random() * 150;
-        pillars.push({
-            x: canvas.width,
-            y: canvas.height - height,
-            w: 70,
-            h: height,
-            hasTreat: true
-        });
-    }
+        const h = 150 + Math.random() * 150;
+        const p = document.createElement('div');
+        p.className = 'pillar';
+        p.style.height = h + 'px';
+        p.style.left = '110vw';
+        
+        const t = document.createElement('div');
+        t.className = 'treat';
+        t.innerText = '🧁';
+        t.style.left = '110vw';
+        t.style.bottom = (h + 10) + 'px';
+        
+        container.appendChild(p);
+        container.appendChild(t);
 
-    function handleInput() {
-        if (player.grounded) {
-            player.dy = player.jumpForce;
-            player.grounded = false;
-        }
-    }
+        let posX = 110;
+        const move = setInterval(() => {
+            posX -= 0.5;
+            p.style.left = posX + 'vw';
+            t.style.left = (posX + 2) + 'vw';
 
-    function update() {
-        if (!gameActive) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Physics
-        player.dy += player.gravity;
-        player.y += player.dy;
-        player.grounded = false;
-
-        // Ground Floor
-        if (player.y > 350) {
-            player.y = 350;
-            player.dy = 0;
-            player.grounded = true;
-        }
-
-        // Draw Player
-        ctx.font = "50px Arial";
-        ctx.fillText(player.emoji, player.x, player.y + 40);
-
-        // Handle Pillars
-        for (let i = pillars.length - 1; i >= 0; i--) {
-            let p = pillars[i];
-            p.x -= 4;
-
-            // Draw Pillar (Marshmallow Style)
-            ctx.fillStyle = "white";
-            ctx.strokeStyle = "#ffeff2";
-            ctx.lineWidth = 4;
-            ctx.fillRect(p.x, p.y, p.w, p.h);
-            ctx.strokeRect(p.x, p.y, p.w, p.h);
-
-            // Draw Treat
-            if (p.hasTreat) {
-                ctx.font = "30px Arial";
-                ctx.fillText("🧁", p.x + 15, p.y - 10);
-            }
-
-            // LANDING LOGIC (The Fix!)
-            if (player.x + player.w > p.x && player.x < p.x + p.w) {
-                // Check if falling onto the top of a pillar
-                if (player.y + player.h > p.y && player.y + player.h < p.y + 30 && player.dy >= 0) {
-                    player.y = p.y - player.h;
+            // Landing & Collecting
+            const pRect = playerEl.getBoundingClientRect();
+            const piRect = p.getBoundingClientRect();
+            
+            if (pRect.right > piRect.left && pRect.left < piRect.right) {
+                if (pRect.bottom > piRect.top && pRect.bottom < piRect.top + 50 && player.dy >= 0) {
+                    player.y = h;
                     player.dy = 0;
-                    player.grounded = true;
-                    
-                    // Collect Treat!
-                    if (p.hasTreat) {
-                        p.hasTreat = false;
+                    player.onPillar = true;
+                    if(t.style.display !== 'none') {
+                        t.style.display = 'none';
                         score++;
                         document.getElementById('score').innerText = score;
-                        if(score >= 10) {
-                           alert("You Won, Queen! 👑");
-                           location.reload();
-                        }
                     }
                 }
             }
 
-            if (p.x + p.w < 0) pillars.splice(i, 1);
-        }
+            if (posX < -20) { p.remove(); t.remove(); clearInterval(move); }
+        }, 10);
+    }
 
-        if (frame % 100 === 0) spawnPillar();
-        frame++;
+    function update() {
+        player.dy += player.grav;
+        player.y -= player.dy;
+        
+        if (player.y < 100) { player.y = 100; player.dy = 0; }
+        playerEl.style.bottom = player.y + 'px';
         requestAnimationFrame(update);
     }
 
+    setInterval(spawnPillar, 3000);
     update();
 </script>
 </body>
