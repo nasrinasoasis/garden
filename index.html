@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nasrina's Enchanted Garden</title>
+    <title>Nasrina's Eternal Oasis</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; overflow: hidden; background: #a6c1ee; font-family: 'Press Start 2P', cursive; }
         #game-container { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+
+        /* --- THE PERMANENT GARDEN LAYERS --- */
+        .layer { position: absolute; width: 200%; bottom: 0; left: 0; }
         
-        /* --- THE ALICE GARDEN LAYERS --- */
-        .layer { position: absolute; width: 200%; height: 100%; top: 0; left: 0; background-repeat: repeat-x; background-position: bottom; }
+        /* Layer 1: Dreamy Far Mountains */
+        .mountains { height: 300px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><path d="M0 20 L20 5 L40 20 L60 2 L80 20 L100 5 L100 20 Z" fill="%23d1d8e0" opacity="0.5"/></svg>'); background-repeat: repeat-x; animation: move 60s linear infinite; z-index: 1; }
         
-        /* 1. Far Mountains (Move slowest) */
-        .mountains { background-image: url('https://i.imgur.com/vH9vT5A.png'); background-size: contain; opacity: 0.6; z-index: 1; animation: move 60s linear infinite; }
+        /* Layer 2: Enchanted Trees */
+        .trees { height: 200px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40"><circle cx="20" cy="30" r="15" fill="%23fbc2eb"/><circle cx="50" cy="25" r="20" fill="%23fbc2eb"/><circle cx="80" cy="30" r="15" fill="%23fbc2eb"/></svg>'); background-repeat: repeat-x; animation: move 30s linear infinite; z-index: 2; bottom: 40px; }
         
-        /* 2. Trees & Flowers (Move medium) */
-        .trees { background-image: url('https://i.imgur.com/kS9yXqW.png'); background-size: contain; z-index: 2; animation: move 30s linear infinite; bottom: 50px; }
-        
-        /* 3. The Ground (Move fastest) */
-        .ground { height: 100px; bottom: 0; background: #d4e4bc; border-top: 5px solid #88ab75; z-index: 10; width: 100%; }
+        /* Layer 3: The Ground */
+        .ground { height: 100px; bottom: 0; background: #d4e4bc; border-top: 10px solid #c5d8a8; z-index: 10; width: 100%; position: absolute; }
 
         @keyframes move { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-        /* --- CHARACTERS --- */
+        /* --- CHARACTERS & OBJECTS --- */
         #player { position: absolute; bottom: 100px; left: 150px; font-size: 60px; z-index: 100; transition: bottom 0.1s; }
-        .pillar { position: absolute; bottom: 0; width: 100px; background: white; border: 4px solid #ffc1cc; border-radius: 15px 15px 0 0; z-index: 15; }
+        .pillar { position: absolute; bottom: 0; width: 100px; background: white; border: 4px solid #ffeff2; border-radius: 20px 20px 0 0; z-index: 15; box-shadow: 0 -5px 15px rgba(255,193,204,0.3); }
         .treat { position: absolute; font-size: 40px; z-index: 20; }
 
         #ui { position: absolute; top: 20px; left: 20px; color: #db7093; z-index: 1000; font-size: 14px; text-shadow: 2px 2px white; }
@@ -33,7 +33,7 @@
 </head>
 <body onclick="jump()">
 
-    <div id="ui">CHARMS: <span id="score">0</span></div>
+    <div id="ui">CHARMS: <span id="score">0</span>/10</div>
     <div id="game-container">
         <div class="layer mountains"></div>
         <div class="layer trees"></div>
@@ -43,7 +43,7 @@
 
 <script>
     let score = 0;
-    const player = { y: 100, dy: 0, jump: -18, grav: 0.9, onPillar: false };
+    const player = { y: 100, dy: 0, jump: -20, grav: 1.0, onPillar: false };
     const container = document.getElementById('game-container');
     const playerEl = document.getElementById('player');
 
@@ -55,7 +55,7 @@
     }
 
     function spawnPillar() {
-        const h = 150 + Math.random() * 150;
+        const h = 180 + Math.random() * 120;
         const p = document.createElement('div');
         p.className = 'pillar';
         p.style.height = h + 'px';
@@ -64,7 +64,7 @@
         const t = document.createElement('div');
         t.className = 'treat';
         t.innerText = '🧁';
-        t.style.left = '110vw';
+        t.style.left = '110.5vw';
         t.style.bottom = (h + 10) + 'px';
         
         container.appendChild(p);
@@ -72,16 +72,16 @@
 
         let posX = 110;
         const move = setInterval(() => {
-            posX -= 0.5;
+            posX -= 0.6;
             p.style.left = posX + 'vw';
             t.style.left = (posX + 2) + 'vw';
 
-            // Landing & Collecting
             const pRect = playerEl.getBoundingClientRect();
             const piRect = p.getBoundingClientRect();
             
-            if (pRect.right > piRect.left && pRect.left < piRect.right) {
-                if (pRect.bottom > piRect.top && pRect.bottom < piRect.top + 50 && player.dy >= 0) {
+            // Solid Landing Logic
+            if (pRect.right > piRect.left + 10 && pRect.left < piRect.right - 10) {
+                if (pRect.bottom > piRect.top && pRect.bottom < piRect.top + 60 && player.dy >= 0) {
                     player.y = h;
                     player.dy = 0;
                     player.onPillar = true;
@@ -106,7 +106,7 @@
         requestAnimationFrame(update);
     }
 
-    setInterval(spawnPillar, 3000);
+    setInterval(spawnPillar, 2500);
     update();
 </script>
 </body>
